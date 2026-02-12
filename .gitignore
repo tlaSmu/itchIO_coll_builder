@@ -1,0 +1,8 @@
+config.json
+collections_result.csv
+*.pyc
+__pycache__/
+.DS_Store
+.venv/
+*.log
+.env
