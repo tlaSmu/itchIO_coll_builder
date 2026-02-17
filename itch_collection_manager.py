@@ -47,7 +47,7 @@ def load_config(config_path='config.json'):
         return None
 
 
-def human_delay(min_sec=15, max_sec=35):
+def human_delay(min_sec=10, max_sec=30):
     """
     Рандомна затримка для імітації поведінки людини.
     
