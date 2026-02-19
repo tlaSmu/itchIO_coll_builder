@@ -47,7 +47,7 @@ def load_config(config_path='config.json'):
         return None
 
 
-def human_delay(min_sec=10, max_sec=30):
+def human_delay(min_sec=10, max_sec=20):
     """
     Рандомна затримка для імітації поведінки людини.
     
@@ -248,7 +248,7 @@ def get_html_content(html_file_path, collection_id=None):
         
         # Якщо передано collection_id, замінюємо 000000 на реальний ID
         if collection_id:
-            content = content.replace('utm_medium=000000', f'utm_medium={collection_id}')
+            content = content.replace('&code=000000', f'&code={collection_id}')
             print(f"🔗 Замінено affiliate ID: 000000 → {collection_id}")
         
         return content

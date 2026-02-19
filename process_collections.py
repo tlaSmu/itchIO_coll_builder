@@ -2,14 +2,15 @@
 """
 Process Collections Script
 
-Створює колекції на itch.io на основі keywords з tasks.csv.
-Для кожного keyword створюється окрема колекція з відповідним HTML описом.
+Створює колекції на itch.io на основі keywords з файлу задач.
+Файл задач визначається профілем (--profile games або --profile quizzes).
 """
 
 import csv
 import os
 import sys
 import argparse
+import importlib
 from itch_collection_manager import (
     load_config,
     human_delay,
@@ -20,39 +21,18 @@ from itch_collection_manager import (
 )
 
 
-def read_tasks_csv(tasks_file='tasks.csv'):
+def read_tasks_csv(tasks_file, profile):
     """
-    Читає tasks.csv та повертає список завдань.
-    
+    Читає файл задач через профіль та повертає список завдань.
+    Делегує завантаження профілю — кожен профіль знає свій формат.
+
     Returns:
-        list of dict: [{'keyword': '...', 'game': '...'}, ...]
+        list of dict: [{'keyword': '...', ...}, ...]
     """
-    if not os.path.exists(tasks_file):
-        print(f"❌ Файл {tasks_file} не знайдено!")
-        return []
-    
-    tasks = []
-    try:
-        with open(tasks_file, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if 'keyword' in row and 'game' in row:
-                    # Skip None or empty values
-                    if row['keyword'] is None or row['game'] is None:
-                        continue
-                    
-                    keyword = row['keyword'].strip()
-                    game = row['game'].strip()
-                    
-                    if keyword and game:
-                        tasks.append({'keyword': keyword, 'game': game})
-        
+    tasks = profile.load_tasks(tasks_file)
+    if tasks:
         print(f"📋 Завантажено {len(tasks)} завдань з {tasks_file}")
-        return tasks
-    
-    except Exception as e:
-        print(f"❌ Помилка читання {tasks_file}: {e}")
-        return []
+    return tasks
 
 
 def read_itch_games(games_file='itchioGames.txt'):
@@ -99,16 +79,17 @@ def save_results(results, output_file='collections_result.csv'):
         print(f"❌ Помилка збереження результатів: {e}")
 
 
-def process_collections(tasks_file='tasks.csv', games_file='itchioGames.txt', 
+def process_collections(profile, tasks_file, games_file='itchioGames.txt',
                        config_file='config.json', dry_run=False):
     """
     Головна функція обробки колекцій.
-    
+
     Args:
-        tasks_file: шлях до tasks.csv
+        profile:    модуль профілю (profiles.games або profiles.quizzes)
+        tasks_file: шлях до файлу задач (визначається профілем)
         games_file: шлях до itchioGames.txt
         config_file: шлях до config.json
-        dry_run: якщо True, не виконує реальні запити
+        dry_run:    якщо True, не виконує реальні запити
     """
     print("=" * 60)
     print("🚀 Запуск процесу створення колекцій")
@@ -120,8 +101,8 @@ def process_collections(tasks_file='tasks.csv', games_file='itchioGames.txt',
         print("\n❌ Не вдалося завантажити конфігурацію. Зупинка.")
         return
     
-    # 2. Прочитати tasks.csv
-    tasks = read_tasks_csv(tasks_file)
+    # 2. Прочитати файл задач через профіль
+    tasks = read_tasks_csv(tasks_file, profile)
     if not tasks:
         print("\n❌ Немає завдань для обробки. Зупинка.")
         return
@@ -144,7 +125,8 @@ def process_collections(tasks_file='tasks.csv', games_file='itchioGames.txt',
     
     for i, task in enumerate(tasks, 1):
         keyword = task['keyword']
-        game_name = task['game']
+        # 'game' — ключ у games профілі, 'item_name' — у quizzes
+        game_name = task.get('game', task.get('item_name', ''))
         
         # Вибираємо унікальну гру для кожної колекції
         # Якщо ігор менше ніж завдань, використовуємо по колу
@@ -265,15 +247,20 @@ def process_collections(tasks_file='tasks.csv', games_file='itchioGames.txt',
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Створення колекцій на itch.io')
-    parser.add_argument('--tasks', default='tasks.csv', help='Шлях до tasks.csv')
+    parser.add_argument('--profile', default='games', choices=['games', 'quizzes'],
+                        help='Профіль: games (за замовчуванням) або quizzes')
     parser.add_argument('--games', default='itchioGames.txt', help='Шлях до itchioGames.txt')
     parser.add_argument('--config', default='config.json', help='Шлях до config.json')
     parser.add_argument('--dry-run', action='store_true', help='Тестовий режим без реальних запитів')
-    
+
     args = parser.parse_args()
-    
+
+    profile = importlib.import_module(f"profiles.{args.profile}")
+    print(f"📦 Профіль: {args.profile}")
+
     process_collections(
-        tasks_file=args.tasks,
+        profile=profile,
+        tasks_file=profile.TASKS_FILE,
         games_file=args.games,
         config_file=args.config,
         dry_run=args.dry_run
