@@ -111,6 +111,15 @@ def create_landing_page(item_name: str, keyword: str, profile, extra: dict = Non
     # Вставляємо кнопку після першого параграфа
     final_html = re.sub(r'</p>', f'</p>{download_button_html}', html_content, count=1)
 
+    # Дублюємо кнопку перед <h2>FAQ</h2> якщо такий заголовок є
+    final_html = re.sub(
+        r'(<h2[^>]*>FAQ</h2>)',
+        f'{download_button_html}\\1',
+        final_html,
+        count=1,
+        flags=re.IGNORECASE,
+    )
+
     # 6. Зберігаємо файл
     output_folder = "output"
     os.makedirs(output_folder, exist_ok=True)

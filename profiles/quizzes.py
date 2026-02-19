@@ -65,7 +65,7 @@ PROMPT = """
 * *Example:* "Is there a [Main Keyword] for free?"
 * *Example:* "Can I save my [Main Keyword] results as a PDF?"
 
-
+Now 2026 year
 
 **Formatting:** Use Markdown. **Bold** the [MAIN KEYWORD] every time it appears to ensure SEO visibility.
 """
